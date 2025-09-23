@@ -1,6 +1,7 @@
-{
-    "company":
-    {
-        "name": "Ирис"
-    }
+{"company": {"name": "Ирис", 
+    "inn": "123456789972", 
+    "account": "12345678901", 
+    "correspondent_account": "12345678901",
+    "bik": "123456789", 
+    "ownership": "AO"}
 }
