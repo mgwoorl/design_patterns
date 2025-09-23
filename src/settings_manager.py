@@ -1,56 +1,68 @@
-from src.models.company_model import company_model
 import os
 import json
+from src.models.company_model import company_model
+from src.models.settings import settings
 
 class settings_manager:
-    __file_name:str = ""
-    __company:company_model = None
+    __file_name: str = ""
+    __settings: settings = None
 
     def __new__(cls):
-        if not hasattr(cls, 'instance'):
+        if not hasattr(cls, "instance"):
             cls.instance = super(settings_manager, cls).__new__(cls)
-        return cls.instance 
-    
+        return cls.instance
+
     def __init__(self):
         self.set_default()
 
     @property
-    def company(self) -> company_model:
-        return self.__company
+    def settings(self) -> settings:
+        return self.__settings
 
     @property
     def file_name(self) -> str:
         return self.__file_name
 
     @file_name.setter
-    def file_name(self, value:str):
-        if value.strip() == "":
+    def file_name(self, value: str):
+        if not value.strip():
             return
-        
-        if os.path.exists(value):
-            self.__file_name = value.strip()
+        abs_path = os.path.abspath(value.strip())
+        if os.path.exists(abs_path):
+            self.__file_name = abs_path
         else:
-            raise Exception("Не найден файл настроек!")
+            raise FileNotFoundError("Файл с настройками не найден!")
 
     def load(self) -> bool:
-        if self.__file_name.strip() == "":
-            raise Exception("Не найден файл настроек!")
+        if not self.__file_name.strip():
+            raise FileNotFoundError("Файл с настройками не указан!")
 
         try:
-            with open( self.__file_name.strip(), 'r') as file_instance:
-                data = json.load(file_instance)
+            with open(self.__file_name, "r", encoding="utf-8") as f:
+                data = json.load(f)
 
-                if "company" in data.keys():
-                    item = data["company"]
-                
-                    self.__company.name = item["name"]
-                    return True
+            self.convert(data)
+            return True
 
-            return False
-        except:
+        except Exception as ex:
+            print(f"Ошибка загрузки настроек для компании: {ex}")
             return False
 
-    #по умолчанию
+    def convert(self, data: dict):
+        self.__settings = settings()
+        company = company_model()
+
+        company_data = data.get("company", {})
+
+        company.name = company_data.get("name", "")
+        company.inn = company_data.get("inn", "")
+        company.account = company_data.get("account", "")
+        company.correspondent_account = company_data.get("correspondent_account", "")
+        company.bik = company_data.get("bik", "")
+        company.ownership = company_data.get("ownership", "")
+
+        self.__settings._settings__company = company
+
     def set_default(self):
-        self.__company = company_model()
-        self.__company.name = "Ирис"
+        self.__settings = settings()
+        self.__settings.company.name = "Default"
