@@ -1,22 +1,25 @@
 import os
 import json
-from src.models.company_model import company_model
-from src.models.settings import settings
+from src.models.settings import Settings
+from src.models.company_model import CompanyModel
 
-class settings_manager:
+class SettingsManager:
     __file_name: str = ""
-    __settings: settings = None
+    __settings: Settings = None
 
-    def __new__(cls):
+    def __new__(cls, file_name: str = ""):
         if not hasattr(cls, "instance"):
-            cls.instance = super(settings_manager, cls).__new__(cls)
+            cls.instance = super(SettingsManager, cls).__new__(cls)
         return cls.instance
 
-    def __init__(self):
+    def __init__(self, file_name: str = ""):
+        self.__settings = Settings()
         self.set_default()
+        if file_name:
+            self.file_name = file_name
 
     @property
-    def settings(self) -> settings:
+    def settings(self) -> Settings:
         return self.__settings
 
     @property
@@ -27,30 +30,42 @@ class settings_manager:
     def file_name(self, value: str):
         if not value.strip():
             return
-        abs_path = os.path.abspath(value.strip())
-        if os.path.exists(abs_path):
-            self.__file_name = abs_path
-        else:
-            raise FileNotFoundError("Файл с настройками не найден!")
 
-    def load(self) -> bool:
+        if os.path.exists(value):
+            self.__file_name = os.path.abspath(value)
+            return
+
+        src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), value))
+        if os.path.exists(src_path):
+            self.__file_name = src_path
+            return
+
+        project_root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", value))
+        if os.path.exists(project_root_path):
+            self.__file_name = project_root_path
+            return
+
+        raise FileNotFoundError(f"Файл с настройками не найден: {value}")
+
+    def load(self, file_path: str = None) -> bool:
+        if file_path:
+            self.file_name = file_path
+
         if not self.__file_name.strip():
             raise FileNotFoundError("Файл с настройками не указан!")
 
         try:
             with open(self.__file_name, "r", encoding="utf-8") as f:
                 data = json.load(f)
-
             self.convert(data)
             return True
-
-        except Exception as ex:
-            print(f"Ошибка загрузки настроек для компании: {ex}")
+        except Exception as error:
+            print(f"Ошибка загрузки настроек: {error}")
             return False
 
     def convert(self, data: dict):
-        self.__settings = settings()
-        company = company_model()
+        self.__settings = Settings()
+        company = CompanyModel()
 
         company_data = data.get("company", {})
 
@@ -64,5 +79,5 @@ class settings_manager:
         self.__settings._settings__company = company
 
     def set_default(self):
-        self.__settings = settings()
+        self.__settings = Settings()
         self.__settings.company.name = "Default"
