@@ -64,9 +64,7 @@ class SettingsManager:
             return False
 
     def convert(self, data: dict):
-        self.__settings = Settings()
         company = CompanyModel()
-
         company_data = data.get("company", {})
 
         company.name = company_data.get("name", "")
@@ -76,8 +74,13 @@ class SettingsManager:
         company.bik = company_data.get("bik", "")
         company.ownership = company_data.get("ownership", "")
 
-        self.__settings._settings__company = company
+        self.__settings._Settings__company = company
 
     def set_default(self):
         self.__settings = Settings()
         self.__settings.company.name = "Default"
+        self.__settings.company.inn = "000000000000" 
+        self.__settings.company.account = "00000000000"  
+        self.__settings.company.correspondent_account = "00000000000"  
+        self.__settings.company.bik = "000000000" 
+        self.__settings.company.ownership = "OOO"
