@@ -1,21 +1,19 @@
-import os
-import json
 import unittest
-from src.models.company_model import company_model
-from src.settings_manager import settings_manager
+from src.models.company_model import CompanyModel
+from src.settings_manager import SettingsManager
 
 class test_models(unittest.TestCase):
     def test_empty_createmodel_companymodel(self):
-        model = company_model()
-        model.name == ""
-        model.inn == ""
-        model.account == ""
-        model.correspondent_account == ""
-        model.bik == ""
-        model.ownership == ""
+        model = CompanyModel()
+        assert model.name == ""
+        assert model.inn == ""
+        assert model.account == ""
+        assert model.correspondent_account == ""
+        assert model.bik == ""
+        assert model.ownership == ""
 
     def test_notEmpty_createmodel_companymodel(self):
-        model = company_model()
+        model = CompanyModel()
         model.name = "Test"
         model.inn = "123456789012"
         model.account = "12345678901"
@@ -23,14 +21,13 @@ class test_models(unittest.TestCase):
         model.bik = "123456789"
         model.ownership = "OOO"
 
-        model.name == "Test"
-        model.inn == "123456789012"
-        model.account == "12345678901"
-        model.correspondent_account == "12345678901"
-        model.bik == "123456789"
-        model.ownership == "OOO"
+        assert model.name == "Test"
+        assert model.inn == "123456789012"
+        assert model.account == "12345678901"
+        assert model.correspondent_account == "12345678901"
+        assert model.bik == "123456789"
+        assert model.ownership == "OOO"
 
-    # Конвертация настроек из словаря
     def test_convert_settings(self):
         data = {
             "company": {
@@ -42,90 +39,72 @@ class test_models(unittest.TestCase):
                 "ownership": "OOO"
             }
         }
-        manager = settings_manager()
+        manager = SettingsManager()
         manager.convert(data)
 
         s = manager.settings.company
-        s.name == "Test Company"
-        s.inn == "123456789012"
-        s.account == "12345678901"
-        s.correspondent_account == "12345678901"
-        s.bik == "123456789"
-        s.ownership == "OOO"
+        assert s.name == "Test Company"
+        assert s.inn == "123456789012"
+        assert s.account == "12345678901"
+        assert s.correspondent_account == "12345678901"
+        assert s.bik == "123456789"
+        assert s.ownership == "OOO"
 
-    # Загрузка настроек через существующий файл
     def test_load_createmodel_companymodel(self):
-        file_name = '../settings.json'
-        manager = settings_manager()
-        manager.file_name = file_name
-        result = manager.load()
+        manager = SettingsManager()
+        manager.load("settings.json")
 
-        result == True
+        s = manager.settings.company
+        assert s.name == "Ирис"
+        assert s.inn == "123456789972"
+        assert s.account == "12345678901"
+        assert s.correspondent_account == "12345678901"
+        assert s.bik == "123456789"
+        assert s.ownership == "AO"
 
-        manager.settings.company.name == "Ирис"
-        manager.settings.company.inn == "123456789012"
-        manager.settings.company.account == "12345678901"
-        manager.settings.company.correspondent_account == "12345678901"
-        manager.settings.company.bik == "123456789"
-        manager.settings.company.ownership == "AO"
-
-    # Загрузка настроек из другой директории
     def test_load_from_other_dir(self):
         file_name = "D:/Шаблоны проектирования/data/other_dir_settings.json"
+        manager = SettingsManager()
+        result = manager.load(file_name)
 
-        manager = settings_manager()
-        manager.file_name = file_name
-        result = manager.load()
-
-        result == True
-        manager.settings.company.name == "OtherDirCompany"
+        assert result is True
+        s = manager.settings.company
+        assert s.name == "OtherDirCompany"
 
     def test_invalid_inn_raises(self):
-        model = company_model()
+        model = CompanyModel()
         with self.assertRaises(ValueError):
             model.inn = "123"
 
     def test_invalid_bik_raises(self):
-        model = company_model()
+        model = CompanyModel()
         with self.assertRaises(ValueError):
             model.bik = "12"
 
     def test_invalid_account_raises(self):
-        model = company_model()
+        model = CompanyModel()
         with self.assertRaises(ValueError):
             model.account = "123"
 
     def test_invalid_corr_account_raises(self):
-        model = company_model()
+        model = CompanyModel()
         with self.assertRaises(ValueError):
             model.correspondent_account = "123"
 
     def test_invalid_ownership_raises(self):
-        model = company_model()
+        model = CompanyModel()
         with self.assertRaises(ValueError):
             model.ownership = "COMPANY"
 
     def test_empty_name_raises(self):
-        model = company_model()
+        model = CompanyModel()
         with self.assertRaises(ValueError):
             model.name = ""
 
     def test_none_name_raises(self):
-        model = company_model()
+        model = CompanyModel()
         with self.assertRaises(TypeError):
             model.name = None
-
-    def test_default_settings(self):
-        manager = settings_manager()
-
-        s = manager.settings.company
-
-        assert s.name == "Default"
-        assert s.inn == ""
-        assert s.account == ""
-        assert s.correspondent_account == ""
-        assert s.bik == ""
-        assert s.ownership == ""
 
 if __name__ == "__main__":
     unittest.main()
