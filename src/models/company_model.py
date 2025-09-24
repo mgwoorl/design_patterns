@@ -1,4 +1,4 @@
-class company_model:
+class CompanyModel:
     __name: str = ""
     __inn: str = ""
     __account: str = ""
@@ -42,7 +42,7 @@ class company_model:
     def account(self, value: str | int):
         if isinstance(value, (str, int)):
             value = str(value).strip()
-            if len(value) == 11:
+            if len(value) == 11 and value.isdigit():
                 self.__account = value
             else:
                 raise ValueError("Счет должен содержать 11 цифр")
