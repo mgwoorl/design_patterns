@@ -93,3 +93,4 @@ class CompanyModel:
                 raise ValueError("Вид собственности должен содержать не более 5 символов")
         else:
             raise TypeError("Вид собственности должен быть строкой")
+
