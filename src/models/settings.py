@@ -1,11 +1,17 @@
-from src.models.company_model import company_model
+from src.models.company_model import CompanyModel
 
-class settings:
-    __company: company_model = None
+class Settings:
+    __company: CompanyModel = None
 
     def __init__(self):
-        self.__company = company_model()
+        self.__company = CompanyModel()
 
     @property
-    def company(self) -> company_model:
+    def company(self):
         return self.__company
+
+    @company.setter
+    def company(self, value: CompanyModel):
+        if not isinstance(value, CompanyModel):
+            raise TypeError("Ожидается объект CompanyModel")
+        self.__company = value
