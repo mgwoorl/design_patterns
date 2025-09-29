@@ -1,3 +1,7 @@
+"""
+Менеджер настроек приложения
+"""
+
 import os
 import json
 from src.models.settings import Settings
@@ -19,13 +23,16 @@ class SettingsManager:
             self.__settings = Settings()
             self._initialized = True
 
+    """ Текущие настройки """
     @property
     def settings(self) -> Settings:
         return self.__settings
 
+    """ Открывает файл настроек """
     def open(self, file_path: str) -> bool:
         return self.load(file_path)
 
+    """ Загружает настройки из файла """
     def load(self, file_path: str = None) -> bool:
         if file_path:
             self.__file_name = file_path
@@ -42,6 +49,7 @@ class SettingsManager:
             print(f"Ошибка загрузки: {error}")
             return False
 
+    """ Конвертирует данные JSON в модель настроек """
     def convert(self, data: dict):
         company = company_model()
         company_data = data.get("company", {})
