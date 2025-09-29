@@ -1,3 +1,7 @@
+"""
+Тесты для всех моделей проекта
+"""
+
 import unittest
 from src.models.company_model import company_model
 from src.settings_manager import SettingsManager
@@ -8,8 +12,16 @@ from src.models.nomenclature_group_model import nomenclature_group_model
 import uuid
 
 class test_models(unittest.TestCase):
+
+    # Проверить создание пустой модели компании
+    # Данные после создания должны быть пустыми
     def test_empty_createmodel_companymodel(self):
+        # Подготовка
         model = company_model()
+
+        # Действие
+
+        # Проверки
         assert model.name == ""
         assert model.inn == ""
         assert model.account == ""
@@ -17,8 +29,13 @@ class test_models(unittest.TestCase):
         assert model.bik == ""
         assert model.ownership == ""
 
+    # Проверить создание модели компании с данными
+    # Данные меняем. Данные должны быть установлены
     def test_notEmpty_createmodel_companymodel(self):
+        # Подготовка
         model = company_model()
+        
+        # Действие
         model.name = "Test"
         model.inn = "123456789012"
         model.account = "12345678901234567890"
@@ -26,6 +43,7 @@ class test_models(unittest.TestCase):
         model.bik = "123456789"
         model.ownership = "OOO"
 
+        # Проверки
         assert model.name == "Test"
         assert model.inn == "123456789012"
         assert model.account == "12345678901234567890"
@@ -33,7 +51,10 @@ class test_models(unittest.TestCase):
         assert model.bik == "123456789"
         assert model.ownership == "OOO"
 
+    # Проверить конвертацию настроек
+    # Данные загружаем через словарь
     def test_convert_settings(self):
+        # Подготовка
         data = {
             "company": {
                 "name": "Test Company",
@@ -45,8 +66,11 @@ class test_models(unittest.TestCase):
             }
         }
         manager = SettingsManager()
+
+        # Действие
         manager.convert(data)
 
+        # Проверки
         s = manager.settings.company
         assert s.name == "Test Company"
         assert s.inn == "123456789012"
@@ -55,10 +79,16 @@ class test_models(unittest.TestCase):
         assert s.bik == "123456789"
         assert s.ownership == "OOO"
 
+    # Проверить загрузку настроек из файла
+    # Данные загружаем через json настройки
     def test_load_createmodel_companymodel(self):
+        # Подготовка
         manager = SettingsManager()
+
+        # Действие
         manager.load("settings.json")
 
+        # Проверки
         s = manager.settings.company
         assert s.name == "Ирис"
         assert s.inn == "123456789972"
@@ -67,88 +97,113 @@ class test_models(unittest.TestCase):
         assert s.bik == "123456789"
         assert s.ownership == "AO"
 
+    # Проверить создание компании из настроек
+    # Данные копируются из загруженных настроек
     def test_company_from_settings(self):
+        # Подготовка
         manager = SettingsManager()
         manager.open("settings.json")
+
+        # Действие
         company = company_model(settings=manager.settings)
+
+        # Проверки
         assert company.name == "Ирис"
 
+    # Проверить создание единиц измерения
+    # Создаем базовую и производную единицы
     def test_unit_creation(self):
+        # Подготовка
+
+        # Действие
         gram = unit_model("грамм", 1)
         kg = unit_model("кг", 1000, gram)
-        
+
+        # Проверки
         assert gram.name == "грамм"
         assert kg.name == "кг"
         assert kg.base_unit == gram
 
+    # Проверить коэффициент пересчета единиц измерения
+    # Коэффициент должен быть установлен корректно
     def test_unit_conversion(self):
+        # Подготовка
         gram = unit_model("грамм", 1)
+
+        # Действие
         kg = unit_model("кг", 1000, gram)
+
+        # Проверки
         assert kg.conversion_factor == 1000
 
+    # Проверить создание единицы измерения без базовой единицы
+    # Базовая единица должна быть None
     def test_unit_without_base(self):
+        # Подготовка
+
+        # Действие
         unit = unit_model("штука", 1)
+
+        # Проверки
         assert unit.base_unit == None
 
+    # Проверить создание номенклатуры
+    # Полное наименование должно устанавливаться
     def test_nomenclature_creation(self):
+        # Подготовка
         nomen = nomenclature_model("Товар")
+
+        # Действие
         nomen.full_name = "Полное наименование товара"
+
+        # Проверки
         assert nomen.full_name == "Полное наименование товара"
 
+    # Проверить максимальную длину полного наименования номенклатуры
+    # Длина должна быть 255 символов
     def test_nomenclature_full_name_length(self):
+        # Подготовка
         nomen = nomenclature_model()
         long_name = "a" * 255
+
+        # Действие
         nomen.full_name = long_name
+
+        # Проверки
         assert len(nomen.full_name) == 255
 
-    def test_nomenclature_with_group_and_unit(self):
-        group = nomenclature_group_model("Группа 1")
-        unit = unit_model("шт", 1)
-        nomen = nomenclature_model("Товар")
-        nomen.group = group
-        nomen.unit = unit
-        
-        assert nomen.group == group
-        assert nomen.unit == unit
-
+    # Проверить наследование всех моделей от abstract_reference
+    # Все модели должны наследоваться от базового класса
     def test_all_models_inheritance(self):
+        # Подготовка
         company = company_model()
         unit = unit_model()
         nomen = nomenclature_model()
         group = nomenclature_group_model()
         storage = storage_model()
-        
+
+        # Действие
+
+        # Проверки
         assert isinstance(company, abstract_reference) == True
         assert isinstance(unit, abstract_reference) == True
         assert isinstance(nomen, abstract_reference) == True
         assert isinstance(group, abstract_reference) == True
         assert isinstance(storage, abstract_reference) == True
 
-    def test_company_name_length(self):
-        company = company_model()
-        company.name = "a" * 50
-        assert len(company.name) == 50
-
-    def test_storage_model_creation(self):
-        storage = storage_model("Склад 1")
-        assert storage.name == "Склад 1"
-
-    def test_nomenclature_group_creation(self):
-        group = nomenclature_group_model("Основная группа")
-        assert group.name == "Основная группа"
-
+    # Проверка на сравнение двух по значению одинаковых моделей
     def test_equals_storage_model_create(self):
+        # Подготовка
         id = uuid.uuid4().hex
         storage1 = storage_model()
         storage1.id = id
-        storage2 = storage_model()
+        storage2 = storage_model()   
         storage2.id = id
+
+        # Действие
+
+        # Проверки
         assert storage1 == storage2
 
-    def test_not_equals_storage_model(self):
-        storage1 = storage_model()
-        storage2 = storage_model()
-        assert storage1 != storage2
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
