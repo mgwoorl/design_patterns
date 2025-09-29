@@ -1,83 +1,81 @@
-class CompanyModel:
-    __name: str = ""
+from src.core.abstract_model import abstract_reference
+from src.core.validator import validator, argument_exception
+from src.models.settings import Settings
+
+class company_model(abstract_reference):
     __inn: str = ""
+    __bik: str = ""
     __account: str = ""
     __correspondent_account: str = ""
-    __bik: str = ""
     __ownership: str = ""
 
-    @property
-    def name(self) -> str:
-        return self.__name
+    def __init__(self, name: str = "", settings: Settings = None):
+        super().__init__(name)
+        if settings and settings.company:
+            self._copy_from_settings(settings.company)
 
-    @name.setter
-    def name(self, value: str):
-        if value is None or not isinstance(value, str):
-            raise TypeError("Наименование должно быть строкой")
-        value = value.strip()
-        if not value:
-            raise ValueError("Наименование не может быть пустым")
-        self.__name = value
+    def _copy_from_settings(self, company_data):
+        try:
+            self.name = getattr(company_data, 'name', '')
+            self.inn = getattr(company_data, 'inn', '')
+            self.bik = getattr(company_data, 'bik', '')
+            self.account = getattr(company_data, 'account', '')
+            self.correspondent_account = getattr(company_data, 'correspondent_account', '')
+            self.ownership = getattr(company_data, 'ownership', '')
+        except Exception as e:
+            raise argument_exception(f"Ошибка копирования настроек: {e}")
 
     @property
     def inn(self) -> str:
         return self.__inn
 
     @inn.setter
-    def inn(self, value: str | int):
-        if isinstance(value, (str, int)):
-            value = str(value).strip()
-            if len(value) == 12 and value.isdigit():
-                self.__inn = value
-            else:
-                raise ValueError("ИНН должен содержать 12 цифр")
-        else:
-            raise TypeError("ИНН должен быть строкой или числом")
-
-    @property
-    def account(self) -> str:
-        return self.__account
-
-    @account.setter
-    def account(self, value: str | int):
-        if isinstance(value, (str, int)):
-            value = str(value).strip()
-            if len(value) == 11 and value.isdigit():
-                self.__account = value
-            else:
-                raise ValueError("Счет должен содержать 11 цифр")
-        else:
-            raise TypeError("Счет должен быть строкой или числом")
-
-    @property
-    def correspondent_account(self) -> str:
-        return self.__correspondent_account
-
-    @correspondent_account.setter
-    def correspondent_account(self, value: str | int):
-        if isinstance(value, (str, int)):
-            value = str(value).strip()
-            if len(value) == 11 and value.isdigit():
-                self.__correspondent_account = value
-            else:
-                raise ValueError("Корреспондентский счет должен содержать 11 цифр")
-        else:
-            raise TypeError("Корреспондентский счет должен быть строкой или числом")
+    def inn(self, value: str):
+        if isinstance(value, int):
+            value = str(value)
+        validator.validate(value, str)
+        if len(value) not in [10, 12] or not value.isdigit():
+            raise argument_exception("ИНН должен содержать 10 или 12 цифр")
+        self.__inn = value
 
     @property
     def bik(self) -> str:
         return self.__bik
 
     @bik.setter
-    def bik(self, value: str | int):
-        if isinstance(value, (str, int)):
-            value = str(value).strip()
-            if len(value) == 9 and value.isdigit():
-                self.__bik = value
-            else:
-                raise ValueError("БИК должен содержать 9 цифр")
-        else:
-            raise TypeError("БИК должен быть строкой или числом")
+    def bik(self, value: str):
+        if isinstance(value, int):
+            value = str(value)
+        validator.validate(value, str)
+        if len(value) != 9 or not value.isdigit():
+            raise argument_exception("БИК должен содержать 9 цифр")
+        self.__bik = value
+
+    @property
+    def account(self) -> str:
+        return self.__account
+
+    @account.setter
+    def account(self, value: str):
+        if isinstance(value, int):
+            value = str(value)
+        validator.validate(value, str)
+        if len(value) != 20 or not value.isdigit():
+            raise argument_exception("Счет должен содержать 20 цифр")
+        self.__account = value
+
+    @property
+    def correspondent_account(self) -> str:
+        return self.__correspondent_account
+
+    @correspondent_account.setter
+    def correspondent_account(self, value: str):
+        if isinstance(value, int):
+            value = str(value)
+        validator.validate(value, str)
+        if len(value) != 20 or not value.isdigit():
+            raise argument_exception("Корреспондентский счет должен содержать 20 цифр")
+        self.__correspondent_account = value
 
     @property
     def ownership(self) -> str:
@@ -85,12 +83,5 @@ class CompanyModel:
 
     @ownership.setter
     def ownership(self, value: str):
-        if isinstance(value, str):
-            value = value.strip()
-            if len(value) <= 5:
-                self.__ownership = value
-            else:
-                raise ValueError("Вид собственности должен содержать не более 5 символов")
-        else:
-            raise TypeError("Вид собственности должен быть строкой")
-
+        validator.validate(value, str, 5)
+        self.__ownership = value
