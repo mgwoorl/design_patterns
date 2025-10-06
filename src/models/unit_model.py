@@ -6,10 +6,10 @@ from src.core.abstract_model import abstract_reference
 from src.core.validator import validator, argument_exception
 
 class unit_model(abstract_reference):
-    __base_unit: 'unit_model' = None
+    __base_unit = None
     __conversion_factor: float = 1.0
 
-    def __init__(self, name: str = "", conversion_factor: float = 1.0, base_unit: 'unit_model' = None):
+    def __init__(self, name: str = "", conversion_factor: float = 1.0, base_unit = None):
         """
         Инициализация единицы измерения
         Args:
@@ -29,7 +29,9 @@ class unit_model(abstract_reference):
     """ Устанавливает базовую единицу измерения """
     @base_unit.setter
     def base_unit(self, value):
-        validator.validate(value, (unit_model, type(None)))
+        # Простая проверка для None
+        if value is not None:
+            validator.validate(value, unit_model)
         self.__base_unit = value
 
     """ Коэффициент пересчета """
@@ -40,5 +42,7 @@ class unit_model(abstract_reference):
     """ Устанавливает коэффициент пересчета """
     @conversion_factor.setter
     def conversion_factor(self, value: float):
-        validator.validate(value, (int, float), min_value = 0.0001)
+        validator.validate(value, (int, float))
+        if value <= 0:
+            raise argument_exception("Коэффициент должен быть > 0")
         self.__conversion_factor = value
