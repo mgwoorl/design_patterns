@@ -4,7 +4,6 @@
 
 from src.core.abstract_model import abstract_reference
 from src.core.validator import validator, argument_exception
-from src.models.settings import Settings
 
 class company_model(abstract_reference):
     __inn: str = ""
@@ -20,7 +19,7 @@ class company_model(abstract_reference):
     # Наименование
     # Вид собственности 5 симв
 
-    def __init__(self, name: str = "", settings: Settings = None):
+    def __init__(self, name: str = "", settings = None):
         """
         Инициализация модели компании
         Args:
@@ -28,7 +27,7 @@ class company_model(abstract_reference):
             settings: настройки для копирования данных
         """
         super().__init__(name)
-        if settings and settings.company:
+        if settings and hasattr(settings, 'company'):
             self._copy_from_settings(settings.company)
 
     def _copy_from_settings(self, company_data):
@@ -42,7 +41,7 @@ class company_model(abstract_reference):
         for field in required_fields:
             if not hasattr(company_data, field):
                 raise argument_exception(f"Отсутствует обязательное поле: {field}")
-        
+
         # Копируем данные
         self.name = company_data.name
         self.inn = company_data.inn
@@ -66,7 +65,7 @@ class company_model(abstract_reference):
     @property
     def inn(self) -> str:
         return self.__inn
-    
+
     """ Устанавливает ИНН """
     @inn.setter
     def inn(self, value: str):
@@ -96,7 +95,7 @@ class company_model(abstract_reference):
     @property
     def correspondent_account(self) -> str:
         return self.__correspondent_account
-        
+
     """ Устанавливает корреспондентский счет """
     @correspondent_account.setter
     def correspondent_account(self, value: str):
@@ -111,7 +110,7 @@ class company_model(abstract_reference):
     @property
     def account(self) -> str:
         return self.__account
-    
+
     """ Устанавливает расчетный счет """
     @account.setter
     def account(self, value: str):
@@ -126,7 +125,7 @@ class company_model(abstract_reference):
     @property
     def ownership(self) -> str:
         return self.__ownership
-    
+
     """ Устанавливает вид собственности """
     @ownership.setter
     def ownership(self, value: str):
