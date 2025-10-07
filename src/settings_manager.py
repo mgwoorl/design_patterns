@@ -62,3 +62,13 @@ class SettingsManager:
         company.ownership = company_data.get("ownership", "")
 
         self.__settings.company = company
+
+    def set_default(self):
+        """Устанавливает настройки по умолчанию"""
+        self.__settings = Settings()
+        self.__settings.company.name = "Default"
+        self.__settings.company.inn = "000000000000"
+        self.__settings.company.account = "00000000000"
+        self.__settings.company.correspondent_account = "00000000000"
+        self.__settings.company.bik = "000000000"
+        self.__settings.company.ownership = "OOO"

@@ -1,20 +1,28 @@
 """
 Исключение при проверке аргумента
-"""   
+"""
+
+
 class argument_exception(Exception):
-    pass     
-    
+    pass
+
+
 """
 Исключение при выполнении бизнес операции
-"""  
+"""
+
+
 class operation_exception(Exception):
-    pass    
+    pass
+
 
 """
 Прокси для обработки ошибок
 """
+
+
 class error_proxy:
-    
+
     @staticmethod
     def handle_error(message: str):
         """
@@ -26,13 +34,16 @@ class error_proxy:
         """
         return message
 
+
 """
 Набор проверок данных
 """
+
+
 class validator:
 
     @staticmethod
-    def validate(value, type_, len_= None, min_value = None):
+    def validate(value, type_, len_=None, min_value=None):
         """
             Валидация аргумента по типу и длине
         Args:
