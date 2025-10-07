@@ -53,17 +53,19 @@ class recipe_model(abstract_reference):
     """ Ингредиенты """
     @property
     def ingredients(self) -> list:
-        return self.__ingredients
+        return self.__ingredients.copy()
 
-    def add_ingredient(self, ingredient: str):
-        validator.validate(ingredient, str, 100)
-        self.__ingredients.append(ingredient.strip())
+    @ingredients.setter
+    def ingredients(self, value: list):
+        validator.validate(value, list)
+        self.__ingredients = value.copy()
 
     """ Шаги приготовления """
     @property
     def steps(self) -> list:
-        return self.__steps
+        return self.__steps.copy()
 
-    def add_step(self, step: str):
-        validator.validate(step, str, 1000)
-        self.__steps.append(step.strip())
+    @steps.setter
+    def steps(self, value: list):
+        validator.validate(value, list)
+        self.__steps = value.copy()
