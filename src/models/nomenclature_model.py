@@ -7,8 +7,8 @@ from src.core.validator import validator, argument_exception
 
 class nomenclature_model(abstract_reference):
     __full_name: str = ""
-    __group: 'nomenclature_group_model' = None
-    __unit: 'unit_model' = None
+    __group = None
+    __unit = None
 
     def __init__(self, name: str = ""):
         """
@@ -38,7 +38,10 @@ class nomenclature_model(abstract_reference):
     """ Устанавливает группу номенклатуры """
     @group.setter
     def group(self, value):
-        validator.validate(value, (nomenclature_group_model, type(None)))
+        # Простая проверка для None
+        if value is not None:
+            from src.models.nomenclature_group_model import nomenclature_group_model
+            validator.validate(value, nomenclature_group_model)
         self.__group = value
 
     """ Единица измерения """
@@ -49,5 +52,8 @@ class nomenclature_model(abstract_reference):
     """ Устанавливает единицу измерения """
     @unit.setter
     def unit(self, value):
-        validator.validate(value, (unit_model, type(None)))
+        # Простая проверка для None
+        if value is not None:
+            from src.models.unit_model import unit_model
+            validator.validate(value, unit_model)
         self.__unit = value
