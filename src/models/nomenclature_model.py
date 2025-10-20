@@ -1,59 +1,62 @@
+from src.core.entity_model import entity_model
+from src.models.group_model import group_model
+from src.models.range_model import range_model
+from src.core.validator import validator
+from src.dtos.nomenclature_dto import nomenclature_dto
+from src.reposity import reposity
+
+
 """
 Модель номенклатуры
 """
+class nomenclature_model(entity_model):
+    __group: group_model = None
+    __range: range_model = None
 
-from src.core.abstract_model import abstract_reference
-from src.core.validator import validator, argument_exception
-
-class nomenclature_model(abstract_reference):
-    __full_name: str = ""
-    __group = None
-    __unit = None
-
-    def __init__(self, name: str = ""):
-        """
-        Инициализация номенклатуры
-        Args:
-            name: наименование номенклатуры
-        """
-        super().__init__(name)
-        self.__full_name = name
-
-    """ Полное наименование (строка до 255 символов) """
+   
+    """
+    Группа номенклатуры
+    """
     @property
-    def full_name(self) -> str:
-        return self.__full_name
-
-    """ Устанавливает полное наименование """
-    @full_name.setter
-    def full_name(self, value: str):
-        validator.validate(value, str, 255)
-        self.__full_name = value.strip()
-
-    """ Группа номенклатуры """
-    @property
-    def group(self):
+    def group(self) -> group_model:
         return self.__group
 
-    """ Устанавливает группу номенклатуры """
     @group.setter
-    def group(self, value):
-        # Простая проверка для None
-        if value is not None:
-            from src.models.nomenclature_group_model import nomenclature_group_model
-            validator.validate(value, nomenclature_group_model)
-        self.__group = value
+    def group(self, value: group_model):
+        validator.validate(value,entity_model )
+        self.__group = value    
 
-    """ Единица измерения """
+    """
+    Единица измерения
+    """
     @property
-    def unit(self):
-        return self.__unit
+    def range(self) -> range_model:
+        return self.__range
+    
+    @range.setter
+    def range(self, value: range_model):
+        validator.validate(value, range_model)
+        self.__range = value
 
-    """ Устанавливает единицу измерения """
-    @unit.setter
-    def unit(self, value):
-        # Простая проверка для None
-        if value is not None:
-            from src.models.unit_model import unit_model
-            validator.validate(value, unit_model)
-        self.__unit = value
+
+    """
+    Универсальный фабричный метод
+    """
+    def create(name:str, group:group_model, range:range_model):
+        validator.validate(name, str)
+        item = nomenclature_model()
+        item.name = name
+        item.group = group
+        item.range = range
+        return item
+    
+    """
+    Фабричный метод из Dto
+    """
+    def from_dto(dto:nomenclature_dto, cache:dict):
+        validator.validate(dto, nomenclature_dto)
+        validator.validate(cache, dict)
+        range =  cache[ dto.range_id ] if dto.range_id in cache else None
+        category =  cache[ dto.category_id] if dto.category_id in cache else None
+        item  = nomenclature_model.create(dto.name, category, range)
+        return item
