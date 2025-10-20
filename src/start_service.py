@@ -124,4 +124,48 @@ class start_service:
         # 1 Созданим рецепт
         cooking_time = data['cooking_time'] if 'cooking_time' in data else ""
         portions = int(data['portions']) if 'portions' in data else 0
-        name =  data['name'] if 'name' in data else "НЕ ИЗВЕСТ
+        name =  data['name'] if 'name' in data else "НЕ ИЗВЕСТНО"
+        self.__default_receipt = receipt_model.create(name, cooking_time, portions  )
+
+        # Загрузим шаги приготовления
+        steps =  data['steps'] if 'steps' in data else []
+        for step in steps:
+            if step.strip() != "":
+                self.__default_receipt.steps.append( step )
+
+        self.__convert_ranges(data)
+        self.__convert_groups(data)
+        self.__convert_nomenclatures(data)        
+
+
+        # Собираем рецепт
+        compositions =  data['composition'] if 'composition' in data else []      
+        for composition in compositions:
+            # TODO: Заменить код через Dto
+            namnomenclature_id = composition['nomenclature_id'] if 'nomenclature_id' in composition else ""
+            range_id = composition['range_id'] if 'range_id' in composition else ""
+            value  = composition['value'] if 'value' in composition else ""
+            nomenclature = self.__cache[namnomenclature_id] if namnomenclature_id in self.__cache else None
+            range = self.__cache[range_id] if range_id in self.__cache else None
+            item = receipt_item_model.create(  nomenclature, range, value)
+            self.__default_receipt.composition.append(item)
+            
+        # Сохраняем рецепт
+        self.__repo.data[ reposity.receipt_key() ].append(self.__default_receipt)
+        return True
+
+    """
+    Стартовый набор данных
+    """
+    @property
+    def data(self):
+        return self.__repo.data   
+
+    """
+    Основной метод для генерации эталонных данных
+    """
+    def start(self):
+        self.file_name = "settings.json"
+        result = self.load()
+        if result == False:
+            raise operation_exception("Невозможно сформировать стартовый набор данных!")
