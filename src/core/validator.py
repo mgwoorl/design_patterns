@@ -1,61 +1,33 @@
 """
-Исключение при проверке аргумента
-"""
-
-
+Исключение при проверки аргумента
+"""   
 class argument_exception(Exception):
-    pass
-
-
+    pass     
+    
 """
 Исключение при выполнении бизнес операции
-"""
-
-
+"""  
 class operation_exception(Exception):
-    pass
-
-
-"""
-Прокси для обработки ошибок
-"""
-
-
-class error_proxy:
-
-    @staticmethod
-    def handle_error(message: str):
-        """
-            Обработка ошибки
-        Args:
-            message (str): Сообщение об ошибке
-        Returns:
-            str: Сообщение об ошибке
-        """
-        return message
-
+    pass    
+    
 
 """
 Набор проверок данных
 """
-
-
 class validator:
 
     @staticmethod
-    def validate(value, type_, len_=None, min_value=None):
+    def validate( value, type_, len_= None):
         """
             Валидация аргумента по типу и длине
         Args:
             value (any): Аргумент
             type_ (object): Ожидаемый тип
             len_ (int): Максимальная длина
-            min_value (any): Минимальное значение
         Raises:
-            argument_exception: Некорректный тип
-            argument_exception: Неулевая длина
-            argument_exception: Некорректная длина аргумента
-            argument_exception: Некорректное значение
+            arguent_exception: Некорректный тип
+            arguent_exception: Неулевая длина
+            arguent_exception: Некорректная длина аргумента
         Returns:
             True или Exception
         """
@@ -73,8 +45,5 @@ class validator:
 
         if len_ is not None and len(str(value).strip()) > len_:
             raise argument_exception("Некорректная длина аргумента")
-
-        if min_value is not None and value < min_value:
-            raise argument_exception(f"Некорректное значение. Должно быть не менее {min_value}")
 
         return True
