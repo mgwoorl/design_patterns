@@ -1,139 +1,171 @@
 from src.reposity import reposity
-from src.models.unit_model import unit_model
+from src.models.range_model import range_model
+from src.models.group_model import group_model
 from src.models.nomenclature_model import nomenclature_model
-from src.models.nomenclature_group_model import nomenclature_group_model
-from src.models.recepie_model import recipe_model
+from src.core.validator import validator, argument_exception, operation_exception
+import os
+import json
+from src.models.receipt_model import receipt_model
+from src.models.receipt_item_model import receipt_item_model
+from src.dtos.nomenclature_dto import nomenclature_dto
+from src.dtos.range_dto import range_dto
+from src.dtos.category_dto import category_dto
 
 class start_service:
+    # Репозиторий
     __repo: reposity = reposity()
 
+    # Рецепт по умолчанию
+    __default_receipt: receipt_model
+
+    # Словарь который содержит загруженные и инициализованные инстансы нужных объектов
+    # Ключ - id записи, значение - abstract_model
+    __cache = {}
+
+    # Наименование файла (полный путь)
+    __full_file_name:str = ""
+
     def __init__(self):
-        self.__repo.data[reposity.range_key()] = []
-        self.__repo.data[reposity.nomenclature_key()] = []
-        self.__repo.data[reposity.nomenclature_group_key()] = []
-        self.__repo.data[reposity.recipe_key()] = []
+        self.__repo.initalize()
 
     # Singletone
     def __new__(cls):
         if not hasattr(cls, 'instance'):
             cls.instance = super(start_service, cls).__new__(cls)
-        return cls.instance
+        return cls.instance 
 
-    def __default_create_units(self):
-        """Создание единиц измерения"""
-        self.__repo.data[reposity.range_key()].append(unit_model("грамм", 1))
-        self.__repo.data[reposity.range_key()].append(unit_model("килограмм", 1000))
-        self.__repo.data[reposity.range_key()].append(unit_model("штука", 1))
+    # Текущий файл
+    @property
+    def file_name(self) -> str:
+        return self.__full_file_name
 
-    def __default_create_groups(self):
-        """Создание групп номенклатуры"""
-        groups = [
-            "Мука и крупы",
-            "Сладости",
-            "Молочные продукты",
-            "Прочее"
-        ]
+    # Полный путь к файлу настроек
+    @file_name.setter
+    def file_name(self, value:str):
+        validator.validate(value, str)
+        full_file_name = os.path.abspath(value)        
+        if os.path.exists(full_file_name):
+            self.__full_file_name = full_file_name.strip()
+        else:
+            raise argument_exception(f'Не найден файл настроек {full_file_name}')
 
-        for group_name in groups:
-            group = nomenclature_group_model(group_name)
-            self.__repo.data[reposity.nomenclature_group_key()].append(group)
+    # Загрузить настройки из Json файла
+    def load(self) -> bool:
+        if self.__full_file_name == "":
+            raise operation_exception("Не найден файл настроек!")
 
-    def __default_create_nomenclature(self):
-        """Создание номенклатуры"""
-        # Находим группы
-        flour_group = self.__find_group("Мука и крупы")
-        sweets_group = self.__find_group("Сладости")
-        other_group = self.__find_group("Прочеe")
+        try:
+            with open( self.__full_file_name, 'r') as file_instance:
+                settings = json.load(file_instance)
 
-        # Находим единицы измерения
-        gram_unit = self.__find_unit("грамм")
-        piece_unit = self.__find_unit("штука")
+                if "default_receipt" in settings.keys():
+                    data = settings["default_receipt"]
+                    return self.convert(data)
 
-        # Создаем номенклатуру
-        items = [
-            {"name": "Пшеничная мука", "group": flour_group, "unit": gram_unit},
-            {"name": "Мед натуральный", "group": sweets_group, "unit": gram_unit},
-            {"name": "Сахарный песок", "group": sweets_group, "unit": gram_unit},
-            {"name": "Сливочное масло", "group": sweets_group, "unit": gram_unit},
-            {"name": "Яйца куриные", "group": other_group, "unit": piece_unit},
-            {"name": "Сода пищевая", "group": other_group, "unit": gram_unit}
-        ]
+            return False
+        except Exception as e:
+            error_message = str(e)
+            return False
+        
+    # Сохранить элемент в репозитории
+    def __save_item(self, key:str, dto, item):
+        validator.validate(key, str)
+        item.unique_code = dto.id
+        self.__cache.setdefault(dto.id, item)
+        self.__repo.data[ key ].append(item)
 
-        for item in items:
-            nomen = nomenclature_model(item["name"])
-            nomen.group = item["group"]
-            nomen.unit = item["unit"]
-            self.__repo.data[reposity.nomenclature_key()].append(nomen)
+    # Загрузить единицы измерений   
+    def __convert_ranges(self, data: dict) -> bool:
+        validator.validate(data, dict)
+        ranges = data['ranges'] if 'ranges' in data else []    
+        if len(ranges) == 0:
+            return False
+         
+        for range in ranges:
+            dto = range_dto().create(range)
+            item = range_model.from_dto(dto, self.__cache)
+            self.__save_item( reposity.range_key(), dto, item )
 
-    def __find_group(self, group_name):
-        """Поиск группы по имени"""
-        for group in self.__repo.data[reposity.nomenclature_group_key()]:
-            if group.name == group_name:
-                return group
-        return None
+        return True
 
-    def __find_unit(self, unit_name):
-        """Поиск единицы измерения по имени"""
-        for unit in self.__repo.data[reposity.range_key()]:
-            if unit.name == unit_name:
-                return unit
-        return None
+    # Загрузить группы номенклатуры
+    def __convert_groups(self, data: dict) -> bool:
+        validator.validate(data, dict)
+        categories =  data['categories'] if 'categories' in data else []    
+        if len(categories) == 0:
+            return False
 
-    def __create_honey_cookies_recipe(self):
-        """Создание рецепта медового печенья"""
-        honey_cookies = recipe_model("Медовое печенье")
-        honey_cookies.description = "Ароматное медовое печенье"
-        honey_cookies.cooking_time = "45 мин"
-        honey_cookies.portions = "25-30 штук"
+        for category in  categories:
+            dto = category_dto().create(category)    
+            item = group_model.from_dto(dto, self.__cache )
+            self.__save_item( reposity.group_key(), dto, item )
 
-        # Ингредиенты как строки (для простоты тестирования)
-        ingredients_data = [
-            "Пшеничная мука - 400 гр",
-            "Мед натуральный - 100 гр",
-            "Сахарный песок - 150 гр",
-            "Сливочное масло - 100 гр",
-            "Яйца куриные - 2 шт",
-            "Сода пищевая - 5 гр"
-        ]
+        return True
 
-        # Шаги приготовления
-        steps_data = [
-            "Подготовьте все необходимые ингредиенты. Масло достаньте заранее, чтобы оно стало мягким. Духовку разогрейте до 180°C.",
-            "В глубокой миске взбейте размягченное сливочное масло с сахарным песком до легкой пышной массы.",
-            "Добавьте к массе яйца по одному, продолжая взбивать после каждого добавления.",
-            "В отдельной посуде смешайте мед с пищевой содой. Тщательно перемешайте - смесь немного посветлеет.",
-            "Соедините медовую смесь с масляно-яичной массой. Аккуратно перемешайте до однородности.",
-            "В отдельной миске просейте муку и добавьте щепотку соли. Тщательно перемешайте.",
-            "Постепенно добавляйте мучную смесь к жидкой основе, постоянно помешивая.",
-            "Замесите мягкое, эластичное тесто. Оно не должно липнуть к рукам.",
-            "Готовое тесто заверните в пищевую пленку и отправьте в холодильник на 30 минут.",
-            "Достаньте тесто из холодильника. Раскатайте его толщиной около 0.5-0.7 см.",
-            "Используйте формочки для печенья или стакан, чтобы вырезать кружки диаметром 5-6 см.",
-            "Противень застелите бумагой для выпечки. Разложите печеньe на расстоянии 2-3 см друг от друга.",
-            "Выпекайте в разогретой до 180°C духовке 10-12 минут до золотистого цвета.",
-            "Готовое печенье достаньте из духовки и дайте полностью остыть на решетке."
-        ]
+    # Загрузить номенклатуру
+    def __convert_nomenclatures(   self, data: dict) -> bool:
+        validator.validate(data, dict)      
+        nomenclatures = data['nomenclatures'] if 'nomenclatures' in data else []   
+        if len(nomenclatures) == 0:
+            return False
+         
+        for nomenclature in nomenclatures:
+            dto = nomenclature_dto().create(nomenclature)
+            item = nomenclature_model.from_dto(dto, self.__cache)
+            self.__save_item( reposity.nomenclature_key(), dto, item )
 
-        # Используем сеттеры для установки данных
-        honey_cookies.ingredients = ingredients_data
-        honey_cookies.steps = steps_data
+        return True        
 
-        return honey_cookies
 
-    def create_recipes(self):
-        """Фабричный метод для создания рецептов"""
-        honey_cookies = self.__create_honey_cookies_recipe()
-        self.__repo.data[reposity.recipe_key()].append(honey_cookies)
+    # Обработать полученный словарь    
+    def convert(self, data: dict) -> bool:
+        validator.validate(data, dict)
 
-    def create(self):
-        """
-        Основной метод для генерации эталонных данных
-        """
-        self.__default_create_units()
-        self.__default_create_groups()
-        self.__default_create_nomenclature()
-        self.create_recipes()
+        # 1 Созданим рецепт
+        cooking_time = data['cooking_time'] if 'cooking_time' in data else ""
+        portions = int(data['portions']) if 'portions' in data else 0
+        name =  data['name'] if 'name' in data else "НЕ ИЗВЕСТНО"
+        self.__default_receipt = receipt_model.create(name, cooking_time, portions  )
 
+        # Загрузим шаги приготовления
+        steps =  data['steps'] if 'steps' in data else []
+        for step in steps:
+            if step.strip() != "":
+                self.__default_receipt.steps.append( step )
+
+        self.__convert_ranges(data)
+        self.__convert_groups(data)
+        self.__convert_nomenclatures(data)        
+
+
+        # Собираем рецепт
+        compositions =  data['composition'] if 'composition' in data else []      
+        for composition in compositions:
+            # TODO: Заменить код через Dto
+            namnomenclature_id = composition['nomenclature_id'] if 'nomenclature_id' in composition else ""
+            range_id = composition['range_id'] if 'range_id' in composition else ""
+            value  = composition['value'] if 'value' in composition else ""
+            nomenclature = self.__cache[namnomenclature_id] if namnomenclature_id in self.__cache else None
+            range = self.__cache[range_id] if range_id in self.__cache else None
+            item = receipt_item_model.create(  nomenclature, range, value)
+            self.__default_receipt.composition.append(item)
+            
+        # Сохраняем рецепт
+        self.__repo.data[ reposity.receipt_key() ].append(self.__default_receipt)
+        return True
+
+    """
+    Стартовый набор данных
+    """
+    @property
     def data(self):
-        """Стартовый набор данных"""
-        return self.__repo.data
+        return self.__repo.data   
+
+    """
+    Основной метод для генерации эталонных данных
+    """
+    def start(self):
+        self.file_name = "settings.json"
+        result = self.load()
+        if result == False:
+            raise operation_exception("Невозможно сформировать стартовый набор данных!")

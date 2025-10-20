@@ -1,34 +1,30 @@
+from src.core.common import common
+
 """
 Репозиторий данных
 """
-
-from src.core.validator import validator, argument_exception
-
 class reposity:
     __data = {}
-    __keys = {
-        'unit': "unit_model",
-        'nomenclature': "nomenclature_model",
-        'nomenclature_group': "nomenclature_group_model",
-        'recipe': "recipe_model"
-    }
-
-    def __init__(self):
-        """Инициализация репозитория"""
-        for key in self.__keys.values():
-            self.__data[key] = []
 
     @property
     def data(self):
-        """Только для чтения"""
-        return self.__data.copy()
-
+        return self.__data
+    
     """
-    Ключ для единиц измерений
+    Ключ для единц измерений
     """
     @staticmethod
     def range_key():
-        return "unit_model"
+        return "range_model"
+    
+
+    """
+    Ключ для категорий
+    """
+    @staticmethod
+    def group_key():
+        return "group_model"
+    
 
     """
     Ключ для номенклатуры
@@ -36,42 +32,35 @@ class reposity:
     @staticmethod
     def nomenclature_key():
         return "nomenclature_model"
-
-    """
-    Ключ для групп номенклатуры
-    """
-    @staticmethod
-    def nomenclature_group_key():
-        return "nomenclature_group_model"
+    
 
     """
     Ключ для рецептов
     """
     @staticmethod
-    def recipe_key():
-        return "recipe_model"
+    def receipt_key():
+        return "receipt_model"
+    
+    """
+    Получить список всех ключей
+    Источник: https://github.com/Alyona1619
+    """
+    @staticmethod
+    def keys() -> list:
+        result = []
+        methods = [method for method in dir(reposity) if
+                    callable(getattr(reposity, method)) and method.endswith('_key')]
+        for method in methods:
+            key = getattr(reposity, method)()
+            result.append(key)
 
-    def add_item(self, key: str, item):
-        """
-        Безопасное добавление элемента
-        Args:
-            key: Ключ коллекции
-            item: Добавляемый элемент
-        """
-        validator.validate(key, str)
-        if key not in self.__data:
-            raise argument_exception(f"Некорректный ключ: {key}")
-        self.__data[key].append(item)
+        return result
 
-    def get_items(self, key: str):
-        """
-        Безопасное получение коллекции
-        Args:
-            key: Ключ коллекции
-        Returns:
-            list: Копия коллекции
-        """
-        validator.validate(key, str)
-        if key not in self.__data:
-            raise argument_exception(f"Некорректный ключ: {key}")
-        return self.__data[key].copy()
+    
+    """
+    Инициализация
+    """
+    def initalize(self):
+        keys = reposity.keys()
+        for key in keys:
+            self.__data[ key ] = []

@@ -1,74 +1,99 @@
-"""
-Менеджер настроек приложения
-"""
-
+from src.models.settings_model import settings_model
+from src.core.validator import argument_exception
+from src.core.validator import operation_exception
+from src.core.validator import validator
+from src.models.company_model import company_model
+from src.core.common import common
 import os
 import json
-from src.models.settings import Settings
-from src.models.company_model import company_model
-from src.core.validator import operation_exception
 
-class SettingsManager:
-    __file_name: str = ""
-    __settings: Settings = None
-    __instance = None
+####################################################3
+# Менеджер настроек. 
+# Предназначен для управления настройками и хранения параметров приложения
+class settings_manager:
+    # Наименование файла (полный путь)
+    __full_file_name:str = ""
 
+    # Настройки
+    __settings:settings_model = None
+
+    # Singletone
     def __new__(cls):
-        if cls.__instance is None:
-            cls.__instance = super(SettingsManager, cls).__new__(cls)
-        return cls.__instance
-
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(settings_manager, cls).__new__(cls)
+        return cls.instance 
+    
     def __init__(self):
-        if not hasattr(self, '_initialized'):
-            self.__settings = Settings()
-            self._initialized = True
+        self.set_default()
 
-    """ Текущие настройки """
+    # Текущие настройки
     @property
-    def settings(self) -> Settings:
+    def settings(self) -> settings_model:
         return self.__settings
 
-    """ Открывает файл настроек """
-    def open(self, file_path: str) -> bool:
-        return self.load(file_path)
+    # Текущий файл
+    @property
+    def file_name(self) -> str:
+        return self.__full_file_name
 
-    """ Загружает настройки из файла """
-    def load(self, file_path: str = None) -> bool:
-        if file_path:
-            self.__file_name = file_path
+    # Полный путь к файлу настроек
+    @file_name.setter
+    def file_name(self, value:str):
+        validator.validate(value, str)
+        full_file_name = os.path.abspath(value)        
+        if os.path.exists(full_file_name):
+            self.__full_file_name = full_file_name.strip()
+        else:
+            raise argument_exception(f'Не найден файл настроек {full_file_name}')
 
-        if not self.__file_name:
-            raise operation_exception("Файл не указан")
+    # Загрузить настройки из Json файла
+    def load(self) -> bool:
+        if self.__full_file_name == "":
+            raise operation_exception("Не найден файл настроек!")
 
         try:
-            with open(self.__file_name, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            self.convert(data)
-            return True
-        except Exception as error:
-            print(f"Ошибка загрузки: {error}")
+            with open( self.__full_file_name, 'r') as file_instance:
+                settings = json.load(file_instance)
+
+                # Обработка формата ответа
+                if "response_format" in settings:
+                    format_str = settings["response_format"].upper()
+                    try:
+                        from src.core.response_format import ResponseFormat
+                        self.__settings.response_format = ResponseFormat[format_str]
+                    except KeyError:
+                        # Значение по умолчанию при ошибке
+                        self.__settings.response_format = ResponseFormat.JSON
+
+                if "company" in settings.keys():
+                    data = settings["company"]
+                    return self.convert(data)
+
             return False
+        except:
+            return False
+        
+    # Обработать полученный словарь    
+    def convert(self, data: dict) -> bool:
+        validator.validate(data, dict)
 
-    """ Конвертирует данные JSON в модель настроек """
-    def convert(self, data: dict):
-        company = company_model()
-        company_data = data.get("company", {})
+        fields = common.get_fields(self.__settings.company)
+        matching_keys = list(filter(lambda key: key in fields, data.keys()))
 
-        company.name = company_data.get("name", "")
-        company.inn = company_data.get("inn", "")
-        company.bik = company_data.get("bik", "")
-        company.account = company_data.get("account", "")
-        company.correspondent_account = company_data.get("correspondent_account", "")
-        company.ownership = company_data.get("ownership", "")
+        try:
+            for key in matching_keys:
+                setattr(self.__settings.company, key, data[key])
+        except:
+            return False        
 
-        self.__settings.company = company
+        return True
 
+
+    # Параметры настроек по умолчанию
     def set_default(self):
-        """Устанавливает настройки по умолчанию"""
-        self.__settings = Settings()
-        self.__settings.company.name = "Default"
-        self.__settings.company.inn = "000000000000"
-        self.__settings.company.account = "00000000000"
-        self.__settings.company.correspondent_account = "00000000000"
-        self.__settings.company.bik = "000000000"
-        self.__settings.company.ownership = "OOO"
+        company = company_model()
+        company.name = "Рога и копыта"
+        company.inn = -1
+        
+        self.__settings = settings_model()
+        self.__settings.company = company
